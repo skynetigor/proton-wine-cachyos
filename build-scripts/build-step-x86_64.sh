@@ -394,6 +394,13 @@ EOF
     ln -sf ../lib/wine/x86_64-unix/wine "$OUTPUT_DIR/bin/wine"
     ln -sf ../lib/wine/x86_64-unix/wine-preloader "$OUTPUT_DIR/bin/wine-preloader"
     ln -sf ../lib/wine/x86_64-unix/wine-preloader "$install_dir/bin/wine-preloader"
+
+    # CachyOS' loader code (preloader_exec) looks for the 64-bit loader and preloader under
+    # lib/wine/i386-unix. Without these links every child process (starting with wineboot) fails to
+    # exec and exits with code 1.
+    mkdir -p "$OUTPUT_DIR/lib/wine/i386-unix"
+    ln -sf ../x86_64-unix/wine64 "$OUTPUT_DIR/lib/wine/i386-unix/wine64"
+    ln -sf ../x86_64-unix/wine64-preloader "$OUTPUT_DIR/lib/wine/i386-unix/wine64-preloader"
     echo "Wine loader symlinks:"
     ls -la "$OUTPUT_DIR/bin/wine" "$OUTPUT_DIR/bin/wine-preloader"
   fi

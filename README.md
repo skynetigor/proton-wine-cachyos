@@ -38,6 +38,12 @@ GameNative's patches were written for Valve's Wine. 40 of 50 applied unchanged; 
 
 The ARM64EC series (`build-scripts/build-step-arm64ec.sh`) has not been ported.
 
+## Status
+
+The x86_64 package starts in Winlator skyNET: a container created with it runs `wineboot`, `services.exe` and `explorer.exe` and
+launched a game executable. Game compatibility has not been tested beyond that. One extra step was needed for CachyOS: its loader
+code looks for the 64-bit loader under `lib/wine/i386-unix`, so the install step creates `wine64` and `wine64-preloader` links there.
+
 ## Credits and licences
 
 The patches and scripts derive from [GameNative/proton-wine](https://github.com/GameNative/proton-wine), which in turn adopts work from

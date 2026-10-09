@@ -138,7 +138,7 @@ jobs:
 
       - name: Check the build is complete
         run: |
-          for f in lib/wine/x86_64-unix/ntdll.so lib/wine/x86_64-unix/win32u.so lib/wine/x86_64-windows/ntdll.dll bin/wineserver; do
+          for f in lib/wine/x86_64-unix/ntdll.so lib/wine/x86_64-unix/win32u.so lib/wine/x86_64-windows/ntdll.dll bin/wineserver lib/wine/i386-unix/wine64 lib/wine/i386-unix/wine64-preloader; do
             test -e "$HOME/compiled-files-x86_64/$f" || { echo "MISSING: $f"; exit 1; }
           done
           echo "unix libs: $(ls $HOME/compiled-files-x86_64/lib/wine/x86_64-unix | wc -l)"
@@ -148,6 +148,7 @@ jobs:
         env:
           WCP_NAME: ${{ inputs.version_name }}.wcp
           WCP_TYPE: Proton
+          WCP_VERSION_CODE: "2"
           WCP_VERSION_NAME: ${{ inputs.version_name }}
           WCP_DESCRIPTION: "Experimental: CachyOS Wine (${{ inputs.wine_ref }}) rebuilt for Android (bionic) with the GameNative Android patch series, userspace ntsync and fsync. Untested."
         run: |
