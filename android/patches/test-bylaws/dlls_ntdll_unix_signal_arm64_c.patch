@@ -1,0 +1,48 @@
+diff --git a/dlls/ntdll/unix/signal_arm64.c b/dlls/ntdll/unix/signal_arm64.c
+index ecc1fac..d90883b 100644
+--- a/dlls/ntdll/unix/signal_arm64.c
++++ b/dlls/ntdll/unix/signal_arm64.c
+@@ -239,6 +239,10 @@ void set_process_instrumentation_callback( void *callback )
+     if (callback) FIXME( "Not supported.\n" );
+ }
+ 
++static BOOL is_arm64ec_suspend_doorbell_valid(void)
++{
++    return is_arm64ec() && NtCurrentTeb()->ChpeV2CpuAreaInfo && NtCurrentTeb()->ChpeV2CpuAreaInfo->SuspendDoorbell;
++}
+ 
+ /***********************************************************************
+  *           syscall_frame_fixup_for_fastpath
+@@ -462,12 +466,20 @@ NTSTATUS WINAPI NtGetContextThread( HANDLE handle, CONTEXT *context )
+ {
+     struct syscall_frame *frame = get_syscall_frame();
+     DWORD needed_flags = context->ContextFlags & ~CONTEXT_ARM64;
+-    BOOL self = (handle == GetCurrentThread());
++    THREAD_BASIC_INFORMATION info;
++    NTSTATUS ret;
++    BOOL self;
++
++    NtQueryInformationThread( handle, ThreadBasicInformation, &info, sizeof(info), NULL );
++    self = HandleToULong( info.ClientId.UniqueThread ) == GetCurrentThreadId();
+ 
+     if (!self)
+     {
+-        NTSTATUS ret = get_thread_context( handle, context, &self, IMAGE_FILE_MACHINE_ARM64 );
+-        if (ret || !self) return ret;
++        /* Avoid exposing JIT code pointers to other processes on ARM64EC */
++        if (is_arm64ec()) NtSuspendThread( handle, NULL );
++        ret = get_thread_context( handle, context, &self, IMAGE_FILE_MACHINE_ARM64 );
++        if (is_arm64ec()) NtResumeThread( handle, NULL );
++        return ret;
+     }
+ 
+     if (needed_flags & CONTEXT_INTEGER)
+@@ -1073,6 +1085,8 @@ static BOOL handle_syscall_fault( ucontext_t *context, EXCEPTION_RECORD *rec )
+ 
+     if (!is_inside_syscall( SP_sig(context) )) return FALSE;
+ 
++    __wine_dbg_notify_syscall_fault();
++
+     TRACE( "code=%x flags=%x addr=%p pc=%p tid=%04x\n",
+            rec->ExceptionCode, rec->ExceptionFlags, rec->ExceptionAddress,
+            (void *)PC_sig(context), GetCurrentThreadId() );

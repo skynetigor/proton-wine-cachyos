@@ -224,8 +224,7 @@ do
       "common/loader_preloader_c.patch"
       "arm64ec/dlls_ntdll_unix_virtual_c.patch"
 
-      # syscall Patches (use test-bylaws below)
-      # "arm64ec/dlls_wow64_syscall_c.patch"
+      # syscall patches: see test-bylaws below
 
       # pulse Patches
       "common/dlls_winepulse_drv_pulse_c.patch"
@@ -262,8 +261,6 @@ do
 
       # FEX unixlib loader (MemoryWineLoadUnixLibByName) support patches
       "common/include_winternl_h.patch"
-      "common/include_wine_unixlib_h.patch"
-      "common/dlls_wow64_virtual_c.patch"
       "common/dlls_ntdll_unix_unix_private_h.patch"
 
       # bionic bug-fixes
@@ -272,6 +269,9 @@ do
 
       # rsaenh
       "common/dlls_rsaenh_rsaenh_c.patch"
+
+      # Winlator marks DirectInput\Joysticks as "disabled"/"override"; newer Wine's XInput honours that too
+      "common/dlls_xinput1_3_main_c.patch"
 
       # fix build
       "arm64ec/programs_wineboot_wineboot_c.patch"
@@ -289,9 +289,13 @@ do
     )
 
     for patch in "${PATCHES[@]}"; do
-#      if git apply --check ./android/patches/$patch 2>/dev/null; then
-        git apply ./android/patches/$patch
-#      fi
+      if [ ! -f "./android/patches/$patch" ]; then
+        echo "ERROR: missing patch $patch"; exit 1
+      fi
+      if ! git apply ./android/patches/$patch; then
+        echo "ERROR: patch does not apply: $patch"; exit 1
+      fi
+      echo "applied $patch"
     done
   fi
 
@@ -343,9 +347,9 @@ do
     cat > "$STAGING/profile.json" <<EOF
 {
   "type": "$WCP_TYPE",
-  "versionName": "11.0-2-$ARCH_NAME",
+  "versionName": "${WCP_VERSION_NAME:-11.0-2-$ARCH_NAME}",
   "versionCode": $WCP_VERSION_CODE,
-  "description": "Proton 11.0-2 $ARCH_NAME (bionic) — stock Valve + userspace ntsync + fsync + Android fixes. SDK 28 + 16KB pages. Needs a fresh $ARCH_NAME container.",
+  "description": "${WCP_DESCRIPTION:-Proton 11.0-2 $ARCH_NAME (bionic)}",
   "files": [],
   "wine": {
     "binPath": "bin",
