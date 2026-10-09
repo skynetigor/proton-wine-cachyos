@@ -151,7 +151,7 @@ jobs:
         env:
           WCP_NAME: ${{ inputs.version_name }}.wcp
           WCP_TYPE: Proton
-          WCP_VERSION_CODE: "2"
+          WCP_VERSION_CODE: "3"
           WCP_VERSION_NAME: ${{ inputs.version_name }}
           WCP_DESCRIPTION: "Experimental: CachyOS Wine (${{ inputs.wine_ref }}) rebuilt for Android (bionic) with the GameNative Android patch series, userspace ntsync and fsync. Untested."
         run: |

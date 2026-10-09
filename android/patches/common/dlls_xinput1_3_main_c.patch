@@ -1,0 +1,16 @@
+diff --git a/dlls/xinput1_3/main.c b/dlls/xinput1_3/main.c
+index 0572158..67a4c1f 100644
+--- a/dlls/xinput1_3/main.c
++++ b/dlls/xinput1_3/main.c
+@@ -422,6 +422,11 @@ static BOOL device_is_overridden(HANDLE device)
+     BOOL disable = FALSE;
+     HKEY defkey, appkey;
+ 
++    /* Winlator writes "disabled"/"override" under DirectInput\Joysticks to choose whether DirectInput
++     * sees the gamepad; XInput must keep using it either way. This DLL only runs inside Winlator,
++     * and PE code has no __ANDROID__ to key on, so the check is skipped unconditionally. */
++    return FALSE;
++
+     if (!HidD_GetProductString(device, name, MAX_PATH)) return FALSE;
+ 
+     get_registry_keys(&defkey, &appkey);

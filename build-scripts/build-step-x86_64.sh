@@ -262,6 +262,9 @@ do
       "common/include_winternl_h.patch"
       "common/dlls_ntdll_unix_unix_private_h.patch"
 
+      # Winlator marks DirectInput\Joysticks as "disabled"/"override"; newer Wine's XInput honours that too
+      "common/dlls_xinput1_3_main_c.patch"
+
       # bionic bug-fixes
       "common/dlls_ntdll_unix_env_c.patch"
       "common/dlls_shell32_shlfileop_c.patch"

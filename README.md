@@ -27,6 +27,7 @@ GameNative's patches were written for Valve's Wine. 40 of 50 applied unchanged; 
 | Patch | What was done |
 | --- | --- |
 | `common/server_fsync_c` | ported: `#if defined(__linux__) && !defined(__ANDROID__)` in `fsync_check_support` |
+| `common/dlls_xinput1_3_main_c` (new) | XInput ignores the `DirectInput\Joysticks` "disabled"/"override" values (Winlator writes them to hide a pad from DirectInput; newer Wine also hid it from XInput, so no gamepad worked) |
 | `common/dlls_winepulse_drv_pulse_c` | ported: Android main-loop branch and the NULL timer-event guard |
 | `common/include_winternl_h` | ported: only `MemoryFexStatsShm` was missing |
 | `x86_64/dlls_ntdll_unix_virtual_c` | one hunk dropped (`get_unixlib_funcs` already exists); a duplicated `MemoryWineLoadUnixLibByName`/`Unload` switch block removed |
