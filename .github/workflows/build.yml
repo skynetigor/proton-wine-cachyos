@@ -40,10 +40,13 @@ jobs:
           cp -R ../overlay/android ../overlay/build-scripts .
 
       - name: Set up build environment
+        timeout-minutes: 15
         run: |
+          # The runner's apt mirrors occasionally hang; retry and time out instead of waiting forever.
+          APT="-o Acquire::Retries=5 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30"
           sudo dpkg --add-architecture i386
-          sudo apt-get update
-          sudo apt-get install -y build-essential git wget curl unzip flex bison gettext autoconf automake \
+          sudo apt-get $APT update
+          sudo apt-get $APT install -y build-essential git wget curl unzip flex bison gettext autoconf automake \
             libtool pkg-config ccache zstd mingw-w64 gcc-multilib g++-multilib libfreetype6-dev \
             libfreetype6-dev:i386 libpng-dev libpng-dev:i386 zlib1g-dev zlib1g-dev:i386
 
