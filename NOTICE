@@ -1,0 +1,10 @@
+This repository contains patches, helper libraries and build scripts adapted from:
+
+  GameNative/proton-wine            https://github.com/GameNative/proton-wine
+  The412Banner/proton-wine          https://github.com/The412Banner/proton-wine
+  GameNative/ntsync-android         https://github.com/GameNative/ntsync-android (fetched at build time)
+  GameNative/bionic-prefix-files    https://github.com/GameNative/bionic-prefix-files (fetched at build time)
+
+Wine itself (CachyOS/wine-cachyos, built from source at CI time) is licensed under the GNU LGPL, version 2.1 or later.
+The patches under android/patches modify Wine and are provided under the same licence.
+No Wine source is included in this repository.

@@ -1,0 +1,155 @@
+# Build CachyOS Wine (the wine tree behind proton-cachyos) for Android/bionic as a Winlator package.
+#
+# Experimental. The Android port is GameNative's patch series (see NOTICE), ported to the CachyOS tree:
+# patches that CachyOS already contains were dropped, the rest apply on top of the pinned commit.
+# The toolchain / termuxfs / ntsync-android setup follows GameNative/proton-wine's build-proton.yml.
+name: Build CachyOS Wine for Android (x86_64)
+
+on:
+  workflow_dispatch:
+    inputs:
+      wine_ref:
+        description: "CachyOS/wine-cachyos commit to build"
+        default: "2ce6b44caa66a56ec99c7826ae564c088abc1b9f"
+      version_name:
+        description: "Package version name (the app parses it: [label-]version[-build]-arch)"
+        default: "exp-cachyos-11.0-20261005-x86_64"
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Free up disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost "$AGENT_TOOLSDIRECTORY"
+          df -h /
+
+      - name: Checkout this repository (patches and build scripts)
+        uses: actions/checkout@v4
+        with:
+          path: overlay
+
+      - name: Fetch CachyOS Wine
+        run: |
+          git init -q wine
+          cd wine
+          git remote add origin https://github.com/CachyOS/wine-cachyos.git
+          git fetch -q --depth 1 origin "${{ inputs.wine_ref }}"
+          git checkout -q FETCH_HEAD
+          git log -1 --format='wine-cachyos %H %s'
+          cp -R ../overlay/android ../overlay/build-scripts .
+
+      - name: Set up build environment
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo apt-get update
+          sudo apt-get install -y build-essential git wget curl unzip flex bison gettext autoconf automake \
+            libtool pkg-config ccache zstd mingw-w64 gcc-multilib g++-multilib libfreetype6-dev \
+            libfreetype6-dev:i386 libpng-dev libpng-dev:i386 zlib1g-dev zlib1g-dev:i386
+
+      - name: Download termuxfs (Android sysroot with the dependencies)
+        run: |
+          mkdir -p $HOME/termuxfs/x86_64
+          cd $HOME/termuxfs/x86_64
+          wget -q https://github.com/GameNative/termux-on-gha/releases/download/build-20260218/termuxfs-x86_64.tar
+          tar -xf termuxfs-x86_64.tar
+
+      - name: Cache Android NDK
+        id: cache-ndk
+        uses: actions/cache@v4
+        with:
+          path: ~/Android/Sdk/ndk/27.3.13750724
+          key: android-ndk-r27d
+
+      - name: Set up Android NDK
+        if: steps.cache-ndk.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p $HOME/Android/Sdk/ndk
+          cd $HOME/Android/Sdk/ndk
+          wget -q https://dl.google.com/android/repository/android-ndk-r27d-linux.zip
+          unzip -q android-ndk-r27d-linux.zip
+          mv android-ndk-r27d 27.3.13750724
+
+      - name: Cache LLVM MinGW toolchain
+        id: cache-llvm-mingw
+        uses: actions/cache@v4
+        with:
+          path: ~/toolchains/llvm-mingw-20250920-ucrt-ubuntu-22.04-x86_64
+          key: bylaws-llvm-mingw-20250920
+
+      - name: Set up LLVM MinGW toolchain
+        if: steps.cache-llvm-mingw.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p $HOME/toolchains
+          cd $HOME/toolchains
+          wget -q https://github.com/bylaws/llvm-mingw/releases/download/20250920/llvm-mingw-20250920-ucrt-ubuntu-22.04-x86_64.tar.xz
+          tar -xf llvm-mingw-20250920-ucrt-ubuntu-22.04-x86_64.tar.xz
+
+      - name: Check out ntsync-android (userspace ntsync)
+        uses: actions/checkout@v4
+        with:
+          repository: GameNative/ntsync-android
+          ref: 7ce6435e5979b1cb5341aa4b299f31e8937fe121
+          path: ntsync-android
+
+      - name: Set up Rust for ntsync-android
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android, x86_64-linux-android
+
+      - name: Cache ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-cachyos-x86_64-${{ github.sha }}
+          restore-keys: ccache-cachyos-x86_64-
+
+      - name: autogen
+        working-directory: wine
+        run: bash autogen.sh
+
+      - name: Build wine-tools (host tools)
+        working-directory: wine
+        run: bash build-scripts/build-step0.sh
+
+      - name: Build ntsync-android
+        working-directory: wine
+        env:
+          NTSYNC_ANDROID_DIR: ${{ github.workspace }}/ntsync-android
+        run: bash build-scripts/build-step-x86_64.sh --build-ntsync-android
+
+      - name: Configure and apply the Android patches
+        working-directory: wine
+        run: bash build-scripts/build-step-x86_64.sh --configure
+
+      - name: Build
+        working-directory: wine
+        run: bash build-scripts/build-step-x86_64.sh --build
+
+      - name: ccache stats
+        if: always()
+        run: ccache -s || true
+
+      - name: Install and strip
+        working-directory: wine
+        run: bash build-scripts/build-step-x86_64.sh --install
+
+      - name: Package .wcp
+        working-directory: wine
+        env:
+          WCP_NAME: ${{ inputs.version_name }}.wcp
+          WCP_TYPE: Proton
+          WCP_VERSION_NAME: ${{ inputs.version_name }}
+          WCP_DESCRIPTION: "Experimental: CachyOS Wine (${{ inputs.wine_ref }}) rebuilt for Android (bionic) with the GameNative Android patch series, userspace ntsync and fsync. Untested."
+        run: |
+          bash build-scripts/build-step-x86_64.sh --package-wcp
+          ls -l $HOME/*.wcp
+          cp $HOME/${{ inputs.version_name }}.wcp $GITHUB_WORKSPACE/
+          sha256sum $GITHUB_WORKSPACE/${{ inputs.version_name }}.wcp
+
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.version_name }}
+          path: ${{ inputs.version_name }}.wcp
+          retention-days: 14
