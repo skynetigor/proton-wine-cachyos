@@ -33,6 +33,7 @@ GameNative's patches were written for Valve's Wine. 40 of 50 applied unchanged; 
 | `common/dlls_ntdll_unix_server_c` | hunk dropped: GameNative-only `dosdevices` setup with a hard-coded `app.gamenative` path |
 | `common/dlls_ntdll_unix_unix_private_h`, `common/dlls_rsaenh_rsaenh_c` | conflicting hunk dropped (already upstream) |
 | `common/include_wine_unixlib_h`, `common/dlls_wow64_virtual_c` | dropped entirely (already upstream) |
+| `x86_64/dlls_ntdll_unix_loader_c` | the added second `load_unixlib_by_name` removed (CachyOS already defines it; a duplicate broke the build) |
 | `x86_64/dlls_ntdll_unix_signal_x86_64_c` | dropped: CachyOS no longer has the seccomp/BPF syscall interception it patches |
 
 The ARM64EC series (`build-scripts/build-step-arm64ec.sh`) has not been ported.

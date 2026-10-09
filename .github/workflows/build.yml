@@ -124,6 +124,8 @@ jobs:
 
       - name: Build
         working-directory: wine
+        env:
+          MAKE_KEEP_GOING: "1"
         run: bash build-scripts/build-step-x86_64.sh --build
 
       - name: ccache stats
@@ -133,6 +135,13 @@ jobs:
       - name: Install and strip
         working-directory: wine
         run: bash build-scripts/build-step-x86_64.sh --install
+
+      - name: Check the build is complete
+        run: |
+          for f in lib/wine/x86_64-unix/ntdll.so lib/wine/x86_64-unix/win32u.so lib/wine/x86_64-windows/ntdll.dll bin/wineserver; do
+            test -e "$HOME/compiled-files-x86_64/$f" || { echo "MISSING: $f"; exit 1; }
+          done
+          echo "unix libs: $(ls $HOME/compiled-files-x86_64/lib/wine/x86_64-unix | wc -l)"
 
       - name: Package .wcp
         working-directory: wine

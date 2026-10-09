@@ -370,7 +370,8 @@ EOF
     rm -rf $OUTPUT_DIR/lib
     rm -rf $OUTPUT_DIR/share
     rm -rf $install_dir
-    make -j$(nproc)
+    # MAKE_KEEP_GOING=1 reports every compile error in one run instead of stopping at the first.
+    make -j$(nproc) ${MAKE_KEEP_GOING:+-k} || { echo "ERROR: make failed"; exit 1; }
   fi
 
   if [ "$arg" == "--install" ]
@@ -380,7 +381,7 @@ EOF
     mkdir -p $OUTPUT_DIR/lib
     mkdir -p $OUTPUT_DIR/share
     mkdir -p $install_dir
-    make install -j$(nproc)
+    make install -j$(nproc) || { echo "ERROR: make install failed"; exit 1; }
     cp -r $install_dir/bin/wine* $OUTPUT_DIR/bin
     cp -r $install_dir/bin/reg* $OUTPUT_DIR/bin
     cp -r $install_dir/bin/msi* $OUTPUT_DIR/bin
